@@ -1,8 +1,8 @@
 import { defineConfig } from "tsup";
 
-import { lodashReplacePlugin } from "../shared/lodash-replace-plugin";
-import { markAsExternalPlugin } from "../shared/mark-as-external-plugin";
-import { removeTestIdsPlugin } from "../shared/remove-test-ids-plugin";
+// import { lodashReplacePlugin } from "../shared/lodash-replace-plugin";
+// import { markAsExternalPlugin } from "../shared/mark-as-external-plugin";
+// import { removeTestIdsPlugin } from "../shared/remove-test-ids-plugin";
 
 export default defineConfig({
     entry: {
@@ -18,11 +18,11 @@ export default defineConfig({
     sourcemap: true,
     clean: false,
     platform: "browser",
-    esbuildPlugins: [
-        removeTestIdsPlugin,
-        lodashReplacePlugin,
-        markAsExternalPlugin,
-    ],
+    // esbuildPlugins: [
+    //     removeTestIdsPlugin,
+    //     lodashReplacePlugin,
+    //     markAsExternalPlugin,
+    // ],
     loader: {
         ".svg": "dataurl",
     },
