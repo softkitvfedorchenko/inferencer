@@ -44,18 +44,18 @@ refine has connectors for 15+ backend services, including REST API, [GraphQL](ht
 ## Installation & Usage
 
 ```
-npm install @refinedev/inferencer
+npm install @skvfedorchenko/inferencer
 ```
 
 ```tsx
-import { AntdInferencer } from "@refinedev/inferencer/antd";
+import { Inferencer } from "@refinedev/inferencer";
 
 const App = () => {
   return (
     <Refine
     /* ... */
     >
-      <AntdInferencer action="list" resource="posts" />
+      <Inferencer action="list" resource="posts" />
     </Refine>
   );
 };
