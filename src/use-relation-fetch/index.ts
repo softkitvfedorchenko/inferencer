@@ -29,6 +29,8 @@ export const useRelationFetch = ({
     infer,
     meta,
 }: UseRelationFetchProps) => {
+    throw new Error('not implemented');
+
     const dataProvider = useDataProvider();
 
     const [updatedFields, setUpdatedFields] = React.useState<InferField[]>([]);
@@ -114,6 +116,7 @@ export const useRelationFetch = ({
                                     const relationInfer = infer(
                                         "__",
                                         record,
+                                        //@ts-ignore
                                         {},
                                         infer,
                                     );
@@ -277,6 +280,7 @@ export const useRelationFetch = ({
                                 const relationInfer = infer(
                                     "__",
                                     responseData,
+                                    //@ts-ignore
                                     {},
                                     infer,
                                 );

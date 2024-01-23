@@ -1,4 +1,4 @@
-import { getFieldableKeys } from "../../utilities";
+import { getFieldableKeys } from '../utilities';
 import { FieldInferencer } from '../types';
 
 const idPropertyRegexp = /id$/i;
