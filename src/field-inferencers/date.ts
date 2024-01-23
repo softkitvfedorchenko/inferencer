@@ -1,26 +1,16 @@
 import dayjs from "dayjs";
-import { FieldInferencer } from "../types";
+import { FieldInferencer } from '../types';
 
 const dateSuffixRegexp = /(_at|_on|At|On|AT|ON)(\[\])?$/;
 
-const dateSeparators = ["/", ":", "-", "."];
+export const dateInfer: FieldInferencer = (key, props) => {
+    const isDateField = dateSuffixRegexp.test(key);
 
-export const dateInfer: FieldInferencer = (key, value) => {
-    const isDateField =
-        dateSuffixRegexp.test(key) && dayjs(value as string).isValid();
-
-    const isValidDateString =
-        typeof value === "string" && dayjs(value).isValid();
-
-    const hasDateSeparator =
-        typeof value === "string" &&
-        dateSeparators.some((s) => value.includes(s));
-
-    if (hasDateSeparator && (isDateField || isValidDateString)) {
+    //@ts-ignore
+    if (isDateField || props.format === 'date-time') {
         return {
             key,
-            type: "date",
-            priority: 1,
+            type: 'date',
         };
     }
 

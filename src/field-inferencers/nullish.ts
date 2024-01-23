@@ -1,10 +1,7 @@
-import { FieldInferencer } from "../types";
+import { FieldInferencer } from '../types';
 
-export const nullishInfer: FieldInferencer = (key, value) => {
-    const isUndefined = typeof value === "undefined";
-    const isNull = value === null;
-
-    if (isUndefined || isNull) {
+export const nullishInfer: FieldInferencer = (key, props: any) => {
+    if (props.nullable === true) {
         return null;
     }
 

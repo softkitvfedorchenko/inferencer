@@ -39,14 +39,6 @@ export type ResourceInferenceAttempt = {
     field: string;
 };
 
-export type FieldInferencer = (
-    key: string,
-    value: unknown,
-    record: Record<string, unknown>,
-    infer: FieldInferencer,
-    type?: "list" | "show" | "edit" | "create",
-) => InferField | null | false;
-
 export type FieldTransformer = (
     fields: Array<InferField>,
     resources: IResourceItem[],
@@ -55,6 +47,13 @@ export type FieldTransformer = (
     infer: FieldInferencer,
     type: "list" | "show" | "edit" | "create",
 ) => Array<InferField>;
+
+export type FieldInferencer = (
+    key: string,
+    props: unknown,
+    infer: FieldInferencer,
+    type?: "list" | "show" | "edit" | "create",
+) => InferField | null | false;
 
 export type RecordField = {
     key: string;

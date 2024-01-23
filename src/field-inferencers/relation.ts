@@ -1,20 +1,17 @@
-import { FieldInferencer } from "../types";
+import has from 'lodash/has';
+import { FieldInferencer } from '../types';
 
 export const relationRegexp = /(-id|-ids|_id|_ids|Id|Ids|ID|IDs)(\[\])?$/;
 
-export const relationInfer: FieldInferencer = (key, value) => {
-    const isRelation = relationRegexp.test(key);
-    const isBasicValue = typeof value === "string" || typeof value === "number";
-    const isBasicArray =
-        Array.isArray(value) &&
-        value.every((v) => typeof v === "string" || typeof v === "number");
+export const relationInfer: FieldInferencer = (key, props) => {
+    const isRelation = has(props, '$ref');
 
-    if ((isRelation && isBasicValue) || (isRelation && isBasicArray)) {
+    if (isRelation) {
         return {
             key,
             relation: true,
-            multiple: isBasicArray ? true : false,
-            type: "relation",
+            multiple: false,
+            type: 'relation',
             priority: 1,
         };
     }

@@ -1,40 +1,29 @@
-import { FieldInferencer, InferType } from "../types";
+import has from "lodash/has";
+import { FieldInferencer } from '../types';
 
 export const arrayInfer: FieldInferencer = (
     key,
-    value,
-    record,
+    props,
     infer,
     type,
 ) => {
-    const isArray = Array.isArray(value);
-    const isBasicArray =
-        Array.isArray(value) &&
-        value.every((v) => typeof v === "string" || typeof v === "number");
+    if (has(props, 'enum')) {
+        return {
+            key,
+            type: 'text',
+        };
+    }
 
-    if (isArray) {
-        if (!isBasicArray) {
-            const inferredInnerType = infer(key, value[0], record, infer, type);
-            if (inferredInnerType) {
-                return {
-                    ...inferredInnerType,
-                    key,
-                    multiple: true,
-                    priority: 1,
-                };
-            } else {
-                return false;
-            }
-        }
-        const basicType = infer(key, value[0], record, infer, type) || {
-            type: "string" as InferType,
+    //@ts-ignore
+    if (props.type === 'array') {
+        //@ts-ignore
+        const basicType = infer(key, props.items, infer, type) || {
+            type: 'text',
         };
 
         return {
             key,
-            multiple: true,
-            priority: 1,
-            type: basicType?.type,
+            type: basicType.type,
         };
     }
 

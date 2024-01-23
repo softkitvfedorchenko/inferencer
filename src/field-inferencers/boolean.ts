@@ -1,12 +1,11 @@
-import { FieldInferencer } from "../types";
+import { FieldInferencer } from '../types';
 
-export const booleanInfer: FieldInferencer = (key, value) => {
-    const isBoolean = typeof value === "boolean";
-
-    if (isBoolean) {
+export const booleanInfer: FieldInferencer = (key, props) => {
+    //@ts-ignore
+    if (props.type === 'boolean') {
         return {
             key,
-            type: "boolean",
+            type: 'boolean',
         };
     }
 

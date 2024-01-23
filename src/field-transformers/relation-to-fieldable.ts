@@ -14,6 +14,7 @@ export const relationToFieldable: FieldTransformer = (
                 ? (record[field.key] as any)[field.accessor as string]
                 : record[field.key];
 
+            //@ts-ignore
             const inferredType = infer(field.key, value, record, infer, type);
 
             if (inferredType && inferredType.type !== "relation") {

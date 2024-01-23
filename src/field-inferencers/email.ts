@@ -1,16 +1,14 @@
-import { FieldInferencer } from "../types";
+import { FieldInferencer } from '../types';
 
-const emailRegexp =
-    /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+const emailSuffixRegexp = /(email)(\[\])?$/;
 
-export const emailInfer: FieldInferencer = (key, value) => {
-    const isValidEmail = typeof value === "string" && emailRegexp.test(value);
+export const emailInfer: FieldInferencer = (key, props) => {
+    const isEmailField = emailSuffixRegexp.test(key);
 
-    if (isValidEmail) {
+    if (isEmailField) {
         return {
             key,
-            type: "email",
-            priority: 1,
+            type: 'email',
         };
     }
 

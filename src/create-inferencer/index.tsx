@@ -1,3 +1,4 @@
+import { getSchemaByType } from '../utilities/find';
 import React, { useContext } from "react";
 import { useResource, TranslationContext } from "@refinedev/core";
 
@@ -6,7 +7,7 @@ import {
     InferencerComponentProps,
     InferencerResultComponent,
     InferField,
-} from "../types";
+} from '../types';
 
 import { composeInferencers } from "../compose-inferencers";
 import { composeTransformers } from "../compose-transformers";
@@ -14,8 +15,6 @@ import { composeTransformers } from "../compose-transformers";
 import { defaultElements } from "../field-inferencers";
 import { defaultTransformers } from "../field-transformers";
 import { LiveComponent } from "../components";
-import { useInferFetch } from "../use-infer-fetch";
-import { useRelationFetch } from "../use-relation-fetch";
 
 import { prepareLiveCode, componentName, removeHiddenCode } from "../utilities";
 
@@ -56,35 +55,23 @@ export const createInferencer: CreateInferencer = ({
     const Inferencer = ({
         resourceName,
         fieldTransformer,
-        hideCodeViewerInProduction,
         meta,
         id,
     }: {
         resourceName?: string;
-        hideCodeViewerInProduction?: boolean;
         fieldTransformer?: InferencerComponentProps["fieldTransformer"];
         meta?: InferencerComponentProps["meta"];
         id?: string | number;
     }) => {
         const { resource, resources } = useResource(resourceName);
-        const { i18nProvider } = useContext(TranslationContext);
-
         const { resource: resourceFromURL } = useResource();
-
-        const {
-            data: record,
-            datas: records,
-            loading: recordLoading,
-            initial: isInitialLoad,
-            error: inferError,
-        } = useInferFetch(type, resourceName ?? resource?.name, id, meta);
+        const { i18nProvider } = useContext(TranslationContext);
 
         const inferSingleField = (
             key: string,
-            value: any,
-            record: Record<string, unknown>,
+            props: any,
         ) => {
-            const inferResult = infer(key, value, record, infer, type);
+            const inferResult = infer(key, props, infer, type);
 
             if (inferResult) {
                 if (resource) {
@@ -92,17 +79,17 @@ export const createInferencer: CreateInferencer = ({
                         [inferResult] as InferField[],
                         resources,
                         resource,
-                        record,
+                        {},
                         infer,
                         type,
                     );
 
                     const customTransformedFields = fieldTransformer
                         ? transformed.flatMap((field) => {
-                              const result = fieldTransformer(field);
+                            const result = fieldTransformer(field);
 
-                              return result ? [result] : [];
-                          })
+                            return result ? [result] : [];
+                        })
                         : transformed;
 
                     return customTransformedFields?.[0];
@@ -112,231 +99,22 @@ export const createInferencer: CreateInferencer = ({
             return undefined;
         };
 
-        const inferSingleRecord = (record: Record<string, unknown>) => {
-            const inferred = Object.keys(record)
-                .map((key) => {
-                    const value = record[key];
+        const inferSchema = (schemaObject: any): InferField[] => {
+            return Object.entries(schemaObject.properties)
+                .reduce((acc, [key, props]) => {
+                    const inferResult = inferSingleField(key, props);
+                    if (inferResult) {
+                        acc.push(inferResult);
+                    }
 
-                    const inferResult = inferSingleField(key, value, record);
-
-                    return inferResult;
-                })
-                .filter(Boolean);
-
-            return inferred as InferField[];
+                    return acc;
+                }, [] as InferField[]);
         };
 
-        const inferMultipleRecords = (records: Record<string, unknown>[]) => {
-            // infer each record
-            // get the most common one for each field
-            // also get the first occurence of the each most common field/key and construct a fresh record from them.
-            // return the fresh record and the inferred fields
-
-            const inferred = records.map((record) => inferSingleRecord(record));
-
-            const allUniqueKeys = records
-                .flatMap((record) => Object.keys(record))
-                .filter((key, index, self) => self.indexOf(key) === index);
-
-            const mostCommonRecord: Record<string, unknown> = {};
-
-            const mostCommonFields = allUniqueKeys.map((key) => {
-                const fields = inferred.map((fields) =>
-                    fields.find((field) => field.key === key),
-                );
-
-                const mostCommonField = fields.reduce(
-                    (acc, field, index) => {
-                        if (!field) {
-                            return acc;
-                        }
-
-                        const count = fields.filter(
-                            (f) =>
-                                f?.key === field.key && f?.type === field.type,
-                        ).length;
-
-                        if (count > acc.count) {
-                            mostCommonRecord[key] = records[index][key];
-
-                            return {
-                                count,
-                                field,
-                            };
-                        }
-
-                        return acc;
-                    },
-                    { count: 0, field: undefined } as {
-                        count: number;
-                        field: undefined | InferField;
-                    },
-                );
-
-                return mostCommonField.field;
-            });
-
-            const response = {
-                commonRecord: mostCommonRecord,
-                inferredFields: mostCommonFields,
-            };
-
-            return response;
-        };
-
-        const [rawResults, recordInUse]: [
-            InferField[],
-            Record<string, unknown> | undefined,
-        ] = React.useMemo(() => {
-            if (records && (type === "list" || type === "create")) {
-                const inferred = inferMultipleRecords(records);
-
-                return [
-                    inferred.inferredFields as InferField[],
-                    inferred.commonRecord,
-                ];
-            }
-            if (record) {
-                const inferred = Object.keys(record)
-                    .map((key) => {
-                        const value = record[key];
-
-                        const inferResult = infer(
-                            key,
-                            value,
-                            record,
-                            infer,
-                            type,
-                        );
-
-                        return inferResult;
-                    })
-                    .filter(Boolean);
-
-                if (resource) {
-                    const transformed = transform(
-                        inferred as InferField[],
-                        resources,
-                        resource,
-                        record,
-                        infer,
-                        type,
-                    );
-
-                    const customTransformedFields = fieldTransformer
-                        ? transformed.flatMap((field) => {
-                              const result = fieldTransformer(field);
-
-                              return result ? [result] : [];
-                          })
-                        : transformed;
-
-                    return [customTransformedFields, record];
-                }
-
-                return [[], record];
-            }
-
-            return [[], undefined];
-        }, [record, records, resources, resource, fieldTransformer]);
-
-        const {
-            fields: results,
-            loading: relationLoading,
-            // initial: relationInitial,
-        } = useRelationFetch({
-            record: recordInUse,
-            fields: rawResults,
-            infer,
-            meta,
-        });
-
-        const clearedFields = React.useMemo(() => {
-            const cleanFields: InferField[] = [];
-
-            results.forEach((f, idx, arr) => {
-                if (f.resource) {
-                    if (
-                        cleanFields.findIndex(
-                            (el) => el.resource?.name === f.resource?.name,
-                        ) > -1
-                    ) {
-                        return;
-                    }
-                    const duplicates = arr.filter((field, index) => {
-                        if (index !== idx) {
-                            const currentFieldHasResource = f.resource;
-                            const fieldHasResource = field.resource;
-                            const hasAnyIdentifier =
-                                field.resource?.identifier ||
-                                f.resource?.identifier;
-                            const isSameResource = hasAnyIdentifier
-                                ? field.resource?.identifier ===
-                                  f.resource?.identifier
-                                : field.resource?.name === f.resource?.name;
-
-                            return (
-                                currentFieldHasResource &&
-                                fieldHasResource &&
-                                isSameResource
-                            );
-                        } else {
-                            return false;
-                        }
-                    });
-                    if (duplicates.length > 0) {
-                        if (type === "create" || type === "edit") {
-                            let toPush: InferField | undefined = undefined;
-
-                            [f, ...duplicates].find((el) => {
-                                if (
-                                    el.fieldable !== true &&
-                                    toPush === undefined
-                                ) {
-                                    toPush = el;
-                                }
-                            });
-                            if (toPush) {
-                                cleanFields.push(toPush);
-                            } else {
-                                cleanFields.push(f);
-                            }
-                        } else {
-                            let toPush: InferField | undefined = undefined;
-
-                            [f, ...duplicates].find((el) => {
-                                if (
-                                    el.fieldable !== false &&
-                                    toPush === undefined
-                                ) {
-                                    toPush = el;
-                                }
-                            });
-
-                            if (toPush) {
-                                cleanFields.push(toPush);
-                            } else {
-                                cleanFields.push(f);
-                            }
-                        }
-                    } else {
-                        cleanFields.push(f);
-                    }
-                } else {
-                    cleanFields.push(f);
-                }
-            });
-
-            return cleanFields;
-        }, [results, type]);
+        const clearedFields = inferSchema(getSchemaByType(resource!.name, type));
 
         const code = React.useMemo(() => {
-            if (
-                !recordLoading &&
-                !relationLoading &&
-                !isInitialLoad &&
-                resource
-            ) {
+            if (resource) {
                 return renderer({
                     resource,
                     resources,
@@ -353,52 +131,28 @@ export const createInferencer: CreateInferencer = ({
             resource,
             resources,
             clearedFields,
-            recordLoading,
-            relationLoading,
         ]);
-
-        const hiddenCodeViewer =
-            process.env.NODE_ENV !== "development" &&
-            hideCodeViewerInProduction;
 
         return (
             <>
-                {LoadingComponent && (recordLoading || relationLoading) && (
-                    <LoadingComponent />
-                )}
-                {!recordLoading && !relationLoading && (
-                    <>
-                        <LiveComponent
-                            fetchError={
-                                !recordLoading && inferError
-                                    ? inferError
-                                    : !recordLoading &&
-                                      !isInitialLoad &&
-                                      !record
-                            }
-                            code={prepareLiveCode(
-                                code,
-                                componentName(
-                                    resource?.meta?.label ??
-                                        resource?.options?.label ??
-                                        resource?.label ??
-                                        resource?.name ??
-                                        "Resource",
-                                    type,
-                                ),
-                            )}
-                            errorComponent={ErrorComponent}
-                            additionalScope={additionalScope}
-                        />
-                        {typeof CodeViewerComponent !== "undefined" &&
-                        !hiddenCodeViewer ? (
-                            <CodeViewerComponent
-                                code={removeHiddenCode(code)}
-                                loading={recordLoading || relationLoading}
-                            />
-                        ) : null}
-                    </>
-                )}
+                <LiveComponent
+                    code={prepareLiveCode(
+                        code,
+                        componentName(
+                            resource?.meta?.label ??
+                            resource?.options?.label ??
+                            resource?.label ??
+                            resource?.name ??
+                            "Resource",
+                            type,
+                        ),
+                    )}
+                    errorComponent={ErrorComponent}
+                    additionalScope={additionalScope}
+                />
+                <CodeViewerComponent
+                    code={removeHiddenCode(code)}
+                />
             </>
         );
     };
@@ -408,7 +162,6 @@ export const createInferencer: CreateInferencer = ({
         resource,
         fieldTransformer,
         meta,
-        hideCodeViewerInProduction,
         id,
     }) => {
         const { resource: resourceItem } = useResource(resource ?? name);
@@ -419,7 +172,6 @@ export const createInferencer: CreateInferencer = ({
 
         return (
             <Inferencer
-                hideCodeViewerInProduction={hideCodeViewerInProduction}
                 fieldTransformer={fieldTransformer}
                 resourceName={resource ?? name}
                 meta={meta ?? {}}
